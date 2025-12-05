@@ -97,90 +97,42 @@ const HomePage = () => {
     }, 100);
   };
 
-  // Dans HomePage.jsx, modifie handleFormSubmit:
-const handleFormSubmit = async (e) => {
-  e.preventDefault();
-  setCaptchaError('');
-  setIsSubmitting(true);
-  
-  // Protection contre les soumissions trop rapides
-  const now = Date.now();
-  if (now - lastSubmissionTime < 5000) {
-    setCaptchaError('Trop de soumissions rapides! Attends 5 secondes.');
-    setIsSubmitting(false);
-    return;
-  }
-
-  // Validation
-  if (!formData.name || !formData.email) {
-    alert('Veuillez remplir votre nom et email!');
-    setIsSubmitting(false);
-    return;
-  }
-
-  // Vérification CAPTCHA
-  if (userCaptchaAnswer.trim() !== captchaAnswer) {
-    setCaptchaError('Réponse incorrecte au défi anti-robot. Réessaie!');
-    generateCaptcha();
-    setIsSubmitting(false);
-    return;
-  }
-
-  // Validation mission
-  if ((selectedMission.id === 'contact' || selectedMission.id === 'info') && !formData.message) {
-    alert('Veuillez écrire un message!');
-    setIsSubmitting(false);
-    return;
-  }
-
-  if (selectedMission.id === 'volunteer' && formData.skills.length === 0) {
-    alert('Veuillez sélectionner au moins une compétence!');
-    setIsSubmitting(false);
-    return;
-  }
-
-  try {
-    // Préparer les données pour l'API
-    const missionData = {};
-    if (selectedMission.id === 'contact' || selectedMission.id === 'info') {
-      missionData.message = formData.message;
-    } else if (selectedMission.id === 'donate') {
-      missionData.amount = `${formData.amount}€`;
-      missionData.recurring = formData.recurring;
-    } else if (selectedMission.id === 'volunteer') {
-      missionData.skills = formData.skills;
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    setCaptchaError('');
+    
+    // Validation basique
+    if (!formData.name || !formData.email) {
+      alert('Veuillez remplir votre nom et email!');
+      return;
     }
 
-    // Données à envoyer à l'API
-    const warriorData = {
-      name: formData.name,
-      email: formData.email,
-      mission: selectedMission.id,
-      missionData
-    };
+    // Vérification du CAPTCHA
+    if (userCaptchaAnswer.trim() !== captchaAnswer) {
+      setCaptchaError('Réponse incorrecte au défi anti-robot. Réessaie!');
+      generateCaptcha(); // Générer un nouveau CAPTCHA
+      return;
+    }
 
-    console.log('Envoi des données à l\'API:', warriorData);
+    // Validation supplémentaire selon la mission
+    if ((selectedMission.id === 'contact' || selectedMission.id === 'info') && !formData.message) {
+      alert('Veuillez écrire un message!');
+      return;
+    }
 
-    // Envoyer les données au backend
-    const response = await fetch('http://localhost:5000/api/warriors', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(warriorData)
+    if (selectedMission.id === 'volunteer' && formData.skills.length === 0) {
+      alert('Veuillez sélectionner au moins une compétence!');
+      return;
+    }
+
+    // Simulation d'envoi de données
+    console.log('Données du formulaire:', {
+      mission: selectedMission,
+      formData,
+      captchaVerified: true
     });
 
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.error || 'Erreur lors de l\'enregistrement');
-    }
-
-    console.log('Réponse du serveur:', result);
-
-    setLastSubmissionTime(now);
-
-    // Préparer les données pour la page de remerciement
+    // Préparer les données pour l'URL
     const submission = {
       name: encodeURIComponent(formData.name),
       email: encodeURIComponent(formData.email),
@@ -189,22 +141,13 @@ const handleFormSubmit = async (e) => {
       amount: formData.amount,
       skills: encodeURIComponent(formData.skills.join(',')),
       recurring: formData.recurring,
-      warriorId: result.warrior._id,
-      badge: result.warrior.badge,
       timestamp: new Date().toISOString()
     };
 
-    // Redirection vers la page de remerciement
+    // Redirection vers la page de remerciement avec les données
     const queryParams = new URLSearchParams(submission).toString();
     window.location.href = `/merci?${queryParams}`;
-
-  } catch (error) {
-    console.error('Erreur:', error);
-    alert(error.message || 'Une erreur est survenue. Veuillez réessayer!');
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
